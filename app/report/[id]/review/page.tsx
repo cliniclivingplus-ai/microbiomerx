@@ -486,7 +486,7 @@ export default function DoctorReviewPage() {
   const params   = useParams()
   const router   = useRouter()
   const reportId = params.id as string
-  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { db: { schema: 'mrx' } })
   const { report: shellReport, loading: shellLoading } = useSectionReport(reportId)
 
   const [filterMessages, setFilterMessages] = useState<{role:'ai'|'doctor';text:string}[]>([])

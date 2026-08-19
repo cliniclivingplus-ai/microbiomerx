@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const MAX_HISTORY_MESSAGES = 10
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 // Support both possible env var names
 const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)!
@@ -338,12 +339,16 @@ ${filterContext}
       'Answer ONLY about this specific patient. Never give generic advice.',
     ].filter(Boolean).join('\n\n')
 
+    // Cap history sent back to the model - unbounded ...messages makes cost grow
+    // quadratically with conversation length since every prior turn gets resent.
+    const recentMessages = messages.slice(-MAX_HISTORY_MESSAGES)
+
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-20b',
       max_tokens: 1000,
       messages: [
         { role: 'system', content: system },
-        ...messages,
+        ...recentMessages,
       ],
     })
 

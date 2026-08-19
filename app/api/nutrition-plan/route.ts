@@ -6,7 +6,8 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'mrx' } }
 )
 
 const SYSTEM_PROMPT = `You are a clinical gut microbiome nutritionist specialising in Indian dietary medicine.

@@ -8,7 +8,7 @@ import { uploadReportPdf } from '@/lib/reportPdf'
 import { supabase } from '@/lib/supabase'
 
 type PatientForm = {
-  name: string; age_sex: string; patient_id: string; sample_type: string
+  name: string; clinic_id: string; age_sex: string; patient_id: string; sample_type: string
   sample_collection_date: string; sample_received_date: string; report_generated_date: string
 }
 
@@ -35,7 +35,7 @@ export default function UploadPage() {
   const [error,        setError]        = useState<string | null>(null)
   const [saving,       setSaving]       = useState(false)
   const [form, setForm] = useState<PatientForm>({
-    name:'', age_sex:'', patient_id:'', sample_type:'',
+    name:'', clinic_id:'', age_sex:'', patient_id:'', sample_type:'',
     sample_collection_date:'', sample_received_date:'', report_generated_date:'',
   })
 
@@ -46,7 +46,7 @@ export default function UploadPage() {
     setFile(null); setDone(false); setSpecies([]); setReportData(null)
     setError(null); setProcessing(false)
     setStepStatuses(Array(4).fill('pending'))
-    setForm({ name:'', age_sex:'', patient_id:'', sample_type:'',
+    setForm({ name:'', clinic_id:'', age_sex:'', patient_id:'', sample_type:'',
       sample_collection_date:'', sample_received_date:'', report_generated_date:'' })
   }
 
@@ -113,6 +113,7 @@ export default function UploadPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) { setError('Patient name is required.'); return }
+    if (!form.clinic_id.trim()) { setError('Clinic ID is required — it\'s what lets this report be found and linked from the clinic\'s other systems.'); return }
     if (species.length < 3) { setError('Not enough species detected.'); return }
     setSaving(true); setError(null)
 
@@ -120,11 +121,35 @@ export default function UploadPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not logged in')
 
+      // ── 0. Find or create the patient record by Clinic ID ────────────────
+      // Clinic ID is the real identity key across this clinic's tools (CLP
+      // Compass, Blood Panel Analyzer use the same field), not the patient's
+      // name — two patients can share a name, but never a Clinic ID. Every
+      // report from here on gets a real patient_id, unlike the ~200
+      // pre-existing reports that only ever carried a free-text name.
+      const clinicId = form.clinic_id.trim()
+      let patientId: string
+      const { data: existingPatient } = await supabase
+        .from('patients').select('id').eq('clinic_id', clinicId).maybeSingle()
+      if (existingPatient) {
+        patientId = existingPatient.id
+      } else {
+        const { data: newPatient, error: patientError } = await supabase
+          .from('patients')
+          .insert({ doctor_id: session.user.id, name: form.name, age_sex: form.age_sex || null, clinic_id: clinicId })
+          .select('id')
+          .single()
+        if (patientError) throw patientError
+        patientId = newPatient.id
+      }
+
       // ── 1. Write report to DB ────────────────────────────────────────────
       const { data, error: dbError } = await supabase
         .from('reports')
         .insert({
           doctor_id:       session.user.id,
+          patient_id:      patientId,
+          clinic_id:       clinicId,
           patient_name:    form.name,
           patient_age_sex: form.age_sex || null,
           pdf_filename:    file?.name || null,
@@ -274,6 +299,7 @@ export default function UploadPage() {
             <div className="p-5 grid grid-cols-2 gap-4">
               {[
                 { name:'name',                   label:'Patient name *',  placeholder:'Full name'  },
+                { name:'clinic_id',              label:'Clinic ID *',     placeholder:'CLP1212'    },
                 { name:'age_sex',                label:'Age / Sex',       placeholder:'63M'        },
                 { name:'patient_id',             label:'Patient ID',      placeholder:'BS041850'   },
                 { name:'sample_type',            label:'Sample type',     placeholder:'Stool'      },

@@ -3,6 +3,8 @@ import Groq from 'groq-sdk'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
+const MAX_HISTORY_MESSAGES = 10
+
 interface ChatMsg { role: 'ai' | 'doctor'; text: string }
 interface SupplementInfo { label: string; aicProduct?: string; phase?: string; category?: string; detail?: string; rationale?: string }
 interface FilterResult {
@@ -92,9 +94,11 @@ ADDING A NEW SUPPLEMENT — only when the doctor explicitly asks you to add a sp
       turnInstruction = 'Continue the conversation. Ask another question only if genuinely useful information is still missing; otherwise produce the filter action.'
     }
 
+    // Cap history sent back to the model - unbounded map over the full running
+    // ask/filter conversation makes cost grow quadratically with turn count.
     const groqMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt },
-      ...(messages || []).map(m => ({
+      ...(messages || []).slice(-MAX_HISTORY_MESSAGES).map(m => ({
         role: (m.role === 'doctor' ? 'user' : 'assistant') as 'user' | 'assistant',
         content: m.text,
       })),

@@ -335,7 +335,8 @@ function buildContraindicationAlerts(
 // MAIN ENGINE
 // ─────────────────────────────────────────────────────────────────
 export async function runRulesEngineV2(
-  supabase: SupabaseClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
   reportData: Record<string, unknown>
 ): Promise<RulesOutputV2> {
 

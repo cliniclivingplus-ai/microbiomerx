@@ -16,6 +16,7 @@ async function createSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
+      db: { schema: 'mrx' },
       cookies: {
         get: (name) => cookieStore.get(name)?.value,
         set: () => {},

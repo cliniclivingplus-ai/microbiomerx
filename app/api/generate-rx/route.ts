@@ -9,7 +9,8 @@ const groq = new Groq({
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'mrx' } }
 )
 
 const SYSTEM_PROMPT = `You are an expert clinical gut microbiome dietitian with deep knowledge of Indian foods, prebiotics, and species-specific dietary interventions. Given a patient's gut microbiome species list and clinical context, generate a comprehensive, highly specific dietary prescription.

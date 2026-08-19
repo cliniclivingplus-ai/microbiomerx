@@ -16,7 +16,8 @@ export default function DoctorProfilePage() {
   const router   = useRouter()
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { db: { schema: 'mrx' } }
   )
 
   const [profile,   setProfile]   = useState<DoctorProfile>({ name: '', degree: 'MBBS', reg_no: '', email: '', signature_data_url: null })

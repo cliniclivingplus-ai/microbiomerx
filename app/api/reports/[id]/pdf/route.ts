@@ -5,7 +5,7 @@ import {
 } from '@/lib/reportPdf'
 import { createSupabaseAdmin, createSupabaseServerClient } from '@/lib/supabaseServer'
 
-const BUCKET = 'reports'
+const BUCKET = 'mrx-reports'
 
 async function getAuthorizedReport(id: string) {
   const supabase = await createSupabaseServerClient()

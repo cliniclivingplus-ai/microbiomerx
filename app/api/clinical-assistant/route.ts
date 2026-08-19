@@ -3,6 +3,8 @@ import Groq from 'groq-sdk'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
+const MAX_HISTORY_MESSAGES = 10
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!
 
@@ -45,9 +47,11 @@ export async function POST(req: NextRequest) {
       ? chunks.map((c: any, i: number) => `[Source ${i + 1}: ${c.source_file}]\n${c.content}`).join('\n\n---\n\n')
       : ''
 
+    // Full report_data JSON was previously stringified into the system prompt on
+    // every turn (multi-KB, unchanged for the whole session) - just send the
+    // identifying fields here; anything section-specific comes via active_section.
     const reportContext = report
-      ? `Patient: ${report.patient_name}, ${report.patient_age_sex ?? ''}
-Report data: ${JSON.stringify(report.report_data, null, 2)}`
+      ? `Patient: ${report.patient_name}, ${report.patient_age_sex ?? ''}`
       : ''
 
     const systemPrompt = `You are a clinical microbiome specialist assistant for MicrobiomeRx, helping doctors interpret gut microbiome reports.
@@ -55,12 +59,16 @@ Be concise, precise, and clinical. ${active_section ? `The doctor is currently v
 ${reportContext ? `\nPatient context:\n${reportContext}` : ''}
 ${knowledgeContext ? `\nKnowledge base:\n${knowledgeContext}` : ''}`
 
+    // Cap history sent back to the model - unbounded ...messages makes cost grow
+    // quadratically with conversation length since every prior turn gets resent.
+    const recentMessages = messages.slice(-MAX_HISTORY_MESSAGES)
+
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-20b',
       max_tokens: 1000,
       messages: [
         { role: 'system', content: systemPrompt },
-        ...messages,
+        ...recentMessages,
       ],
     })
 
