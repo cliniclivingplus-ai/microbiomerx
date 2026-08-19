@@ -152,6 +152,7 @@ function FilterPanel({ supplements, onApply, onClose,
         body: JSON.stringify({ supplements, messages: newMessages, mode: 'chat', hasExistingResults: results.length > 0 }),
       })
       const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`)
       if (data.type === 'results') {
         const followUp = { role: 'ai' as const, text: "Filter updated. Click '← Continue chat' anytime to refine further." }
         const withResult = [...(data.text ? [...newMessages, { role: 'ai' as const, text: data.text }] : newMessages), followUp]
@@ -159,7 +160,7 @@ function FilterPanel({ supplements, onApply, onClose,
         setResultsLocal(data.results || []); onResultsChange(data.results || [])
         setPhaseLocal('results'); onPhaseChange('results')
       } else {
-        const withAi = [...newMessages, { role: 'ai' as const, text: data.text }]
+        const withAi = [...newMessages, { role: 'ai' as const, text: data.text || 'Sorry, something went wrong. Please try again.' }]
         setMessagesLocal(withAi); onMessagesChange(withAi)
       }
     } catch(e) {
