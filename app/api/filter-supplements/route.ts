@@ -205,15 +205,15 @@ async function callGroqWithRetry(
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
-        max_tokens: 2000,
+        model: 'openai/gpt-oss-20b',
+        max_tokens: 3000,
         temperature: 0.2,
-        response_format: { type: 'json_object' },
+        reasoning_effort: 'low',
         messages,
       })
 
       const text = completion.choices[0]?.message?.content || ''
-      if (!text.trim()) throw new Error('Empty completion from llama-3.1-8b-instant')
+      if (!text.trim()) throw new Error('Empty completion from openai/gpt-oss-20b')
       return text
     } catch (err: any) {
       const status = err?.status || err?.response?.status
